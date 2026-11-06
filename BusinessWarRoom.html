@@ -781,8 +781,106 @@
       color: #082d5b;
       font-size: 13px;
     }
+    .region-pie-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .pie-card {
+      background: #ffffff;
+      border: 1.5px solid #cde0f5;
+      border-radius: 10px;
+      padding: 9px 10px;
+      transition: all 0.16s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .pie-card:hover {
+      border-color: #2878e5;
+      box-shadow: 0 4px 12px rgba(40, 120, 229, 0.14);
+    }
+    .pie-card.active-metric {
+      border: 2px solid #1d4ed8;
+      background: linear-gradient(180deg, #ffffff, #f0f7ff);
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.18);
+    }
+    .pie-slice {
+      cursor: pointer;
+      transition: filter 0.15s ease, opacity 0.15s ease, stroke-width 0.15s ease;
+    }
+    .pie-slice:hover {
+      filter: brightness(1.1) drop-shadow(0 3px 6px rgba(8, 45, 91, 0.32));
+      stroke: #082d5b !important;
+      stroke-width: 2.2px !important;
+    }
+    .pie-floating-tooltip {
+      position: fixed;
+      z-index: 9980;
+      pointer-events: none;
+      display: none;
+      background: rgba(8, 28, 56, 0.96);
+      color: #ffffff;
+      border: 1.5px solid #60a5fa;
+      border-radius: 10px;
+      padding: 10px 13px;
+      min-width: 270px;
+      max-width: 340px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+      font-size: 12px;
+      line-height: 1.45;
+      backdrop-filter: blur(4px);
+    }
+    .pie-tt-title {
+      font-size: 13.5px;
+      font-weight: 900;
+      color: #93c5fd;
+      border-bottom: 1px solid rgba(147, 197, 253, 0.3);
+      padding-bottom: 5px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .pie-tt-highlight {
+      background: rgba(37, 99, 235, 0.35);
+      border: 1px solid #60a5fa;
+      border-radius: 7px;
+      padding: 5px 8px;
+      margin-bottom: 6px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .pie-tt-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+      font-size: 11.8px;
+      color: #e2e8f0;
+    }
+    .pie-tt-row b {
+      color: #ffffff;
+      font-weight: 800;
+    }
+    .pie-tt-hint {
+      margin-top: 6px;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(147, 197, 253, 0.35);
+      color: #fde047;
+      font-weight: 800;
+      font-size: 11.5px;
+      text-align: center;
+    }
+    @media(max-width: 1280px) {
+      .region-pie-grid { grid-template-columns: repeat(3, 1fr); }
+    }
     @media(max-width: 1180px) {
       .region-sum-grid { grid-template-columns: repeat(2, 1fr); }
+      .region-pie-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media(max-width: 960px) {
       .app { grid-template-columns: 1fr; }
@@ -793,6 +891,7 @@
 </head>
 <body>
   <div class="toast" id="toast"></div>
+  <div class="pie-floating-tooltip" id="pieFloatingTooltip"></div>
   <div class="app">
     <aside>
       <div>
@@ -1005,6 +1104,179 @@
               </div>
             </div>
             <div class="region-sum-grid" id="hqRegionTotalsGrid"></div>
+
+            <!-- 總處專屬：各區依各項業務（存款／授信／基金／通報／成案）互動圓餅圖 ＋ 點擊擴增該區分行整合圓餅圖 -->
+            <div id="hqRegionPiesPanel" class="card" style="margin-bottom:12px;border:1.5px solid #60a5fa;background:linear-gradient(180deg,#f8fbff,#eef5fc);padding:12px">
+              <div class="title" style="margin-bottom:6px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span>🥧 【各區各項業務佔比圓餅圖】全行 4 大業務分區（北區／桃竹苗區／中區／南區）依業務項目分佈</span>
+                  <span class="demo" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd">🖱️ 滑鼠停在區塊可看該區完整詳細數字｜👆 點擊任一分區區塊即可擴增「該區各分行整合圓餅圖」</span>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                  <span style="font-size:12px;font-weight:800;color:var(--nav)">快速展開轄區分行圓餅圖：</span>
+                  <button type="button" class="slider-btn pie-quick-reg-btn" data-qreg="北區">🗺️ 北區 (46家)</button>
+                  <button type="button" class="slider-btn pie-quick-reg-btn" data-qreg="桃竹苗區">🗺️ 桃竹苗區 (15家)</button>
+                  <button type="button" class="slider-btn pie-quick-reg-btn" data-qreg="中區">🗺️ 中區 (21家)</button>
+                  <button type="button" class="slider-btn pie-quick-reg-btn" data-qreg="南區">🗺️ 南區 (26家)</button>
+                  <button type="button" class="slider-btn" id="btnCloseBranchDrillPie" style="display:none;background:#fee2e2;border-color:#ef4444;color:#991b1b">✕ 收合分行圓餅圖</button>
+                </div>
+              </div>
+
+              <!-- 4 大分區共用圖例 -->
+              <div id="hqRegPieSharedLegend" style="display:flex;justify-content:center;align-items:center;gap:18px;flex-wrap:wrap;padding:5px 10px;background:#fff;border:1px solid #d5e3f0;border-radius:8px;margin-bottom:8px;font-size:12.5px;font-weight:800"></div>
+
+              <!-- 5 大業務項目（存款／授信／基金／通報／成案）4 大分區圓餅圖並排 -->
+              <div class="region-pie-grid" id="hqRegion5PiesGrid">
+                <div class="pie-card" id="pieCardReg_dep">
+                  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                    <b style="font-size:12.5px;color:#082d5b">💰 1. 存款總和圓餅圖</b>
+                    <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieReg_dep" style="padding:2px 6px;font-size:11px">🔍</button>
+                  </div>
+                  <div class="sub" id="pieSubReg_dep" style="font-size:11px;font-weight:700;color:#284b6e;margin-bottom:2px"></div>
+                  <div id="chartPieReg_dep" style="width:100%;height:195px;position:relative"></div>
+                </div>
+
+                <div class="pie-card" id="pieCardReg_loan">
+                  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                    <b style="font-size:12.5px;color:#082d5b">🤝 2. 授信總和圓餅圖</b>
+                    <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieReg_loan" style="padding:2px 6px;font-size:11px">🔍</button>
+                  </div>
+                  <div class="sub" id="pieSubReg_loan" style="font-size:11px;font-weight:700;color:#284b6e;margin-bottom:2px"></div>
+                  <div id="chartPieReg_loan" style="width:100%;height:195px;position:relative"></div>
+                </div>
+
+                <div class="pie-card" id="pieCardReg_fund">
+                  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                    <b style="font-size:12.5px;color:#082d5b">📈 3. 基金總和圓餅圖</b>
+                    <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieReg_fund" style="padding:2px 6px;font-size:11px">🔍</button>
+                  </div>
+                  <div class="sub" id="pieSubReg_fund" style="font-size:11px;font-weight:700;color:#284b6e;margin-bottom:2px"></div>
+                  <div id="chartPieReg_fund" style="width:100%;height:195px;position:relative"></div>
+                </div>
+
+                <div class="pie-card" id="pieCardReg_rep">
+                  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                    <b style="font-size:12.5px;color:#082d5b">📢 4. 通報商機圓餅圖</b>
+                    <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieReg_rep" style="padding:2px 6px;font-size:11px">🔍</button>
+                  </div>
+                  <div class="sub" id="pieSubReg_rep" style="font-size:11px;font-weight:700;color:#284b6e;margin-bottom:2px"></div>
+                  <div id="chartPieReg_rep" style="width:100%;height:195px;position:relative"></div>
+                </div>
+
+                <div class="pie-card" id="pieCardReg_cls">
+                  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                    <b style="font-size:12.5px;color:#082d5b">✅ 5. 實際成案圓餅圖</b>
+                    <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieReg_cls" style="padding:2px 6px;font-size:11px">🔍</button>
+                  </div>
+                  <div class="sub" id="pieSubReg_cls" style="font-size:11px;font-weight:700;color:#284b6e;margin-bottom:2px"></div>
+                  <div id="chartPieReg_cls" style="width:100%;height:195px;position:relative"></div>
+                </div>
+              </div>
+
+              <!-- 點擊任一分區扇形後：動態擴增「該區轄下各分行整合圓餅圖」專區 -->
+              <div id="hqRegionBranchPieDrillPanel" style="display:none;margin-top:12px;padding:13px;background:#ffffff;border:2px solid #2563eb;border-radius:12px;box-shadow:0 8px 22px rgba(37,99,235,0.14)">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:1.5px solid #dbeafe;padding-bottom:8px;margin-bottom:10px">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:99px;font-size:12.5px;font-weight:900" id="drillPieRegionBadge">🔍 北區分行整合</span>
+                    <b style="font-size:14.5px;color:#082d5b" id="drillPiePanelTitle">【北區】轄下各分行業務整合圓餅圖</b>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <label style="font-size:12px;font-weight:800;color:var(--nav)">主圖檢視業務：</label>
+                    <select id="drillPieMetricSelect" style="width:auto;padding:4px 9px;font-size:12.5px;font-weight:900;color:#082d5b;border:1.5px solid #2878e5;border-radius:6px;background:#eef5fc;cursor:pointer">
+                      <option value="dep">💰 存款總額 (表一)</option>
+                      <option value="loan">🤝 授信總額 (表一)</option>
+                      <option value="fund">📈 基金總額 (表一)</option>
+                      <option value="rep">📢 通報商機 (表二)</option>
+                      <option value="cls">✅ 實際成案 (表二)</option>
+                      <option value="weight">🏆 權重積分 (表二)</option>
+                      <option value="contrib">🌟 綜合貢獻 (雙表)</option>
+                    </select>
+                    <label style="font-size:12px;font-weight:800;color:var(--nav)">分行整合呈現方式：</label>
+                    <select id="drillPieGroupModeSelect" style="width:auto;padding:4px 9px;font-size:12.5px;font-weight:800;color:#082d5b;border:1.5px solid #2878e5;border-radius:6px;background:#fff;cursor:pointer">
+                      <option value="TOP10">前 10 大分行 ＋ 其餘分行整合</option>
+                      <option value="TOP15">前 15 大分行 ＋ 其餘分行整合</option>
+                      <option value="ALL">完整展開該區全部分行扇形</option>
+                      <option value="GROUP">依該區內「第一組～第五組」整合</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 上半部：左為「該區主選業務大型分行整合圓餅圖」，右為「該區各分行佔比與詳細數字一覽表」 -->
+                <div class="chartgrid" style="margin-bottom:10px">
+                  <div class="card" style="margin-bottom:0;padding:11px;background:#f8fbff">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                      <b id="drillMainPieTitle" style="font-size:13.5px;color:#082d5b">🥧 【北區】轄下分行「存款總額」整合圓餅圖</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartDrillBranchMainPie">🔍 放大檢視</button>
+                    </div>
+                    <div id="chartDrillBranchMainPie" style="width:100%;height:275px;position:relative"></div>
+                  </div>
+
+                  <div class="card" style="margin-bottom:0;padding:11px;background:#fff">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                      <b id="drillTableTitle" style="font-size:13px;color:#082d5b">📋 該區各分行佔比與詳細業務數字明細（點擊任一列可直達該分行內部檢視）</b>
+                      <span class="demo" id="drillTableSubBadge">區內佔比 ＆ 全行佔比</span>
+                    </div>
+                    <div class="table-wrap" style="max-height:265px">
+                      <table class="data-table" id="drillBranchPieTable">
+                        <thead>
+                          <tr>
+                            <th>排名 / 分行或整合區塊</th>
+                            <th id="thDrillMetricVal">當月實績</th>
+                            <th>佔該區比例</th>
+                            <th>佔全行比例</th>
+                            <th>月增減 MoM / 年增減 YoY</th>
+                            <th>該分行 5 大業務快覽 (存/放/基/報/成)</th>
+                          </tr>
+                        </thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 下半部：該區轄下分行「5 大業務項目（存款／授信／基金／通報／成案）」整合圓餅圖同步總覽 -->
+                <div style="font-size:12.5px;font-weight:900;color:var(--nav);margin-bottom:4px" id="drillSub5Title">
+                  📊 同步展開：該區轄下分行於「5 大業務項目」之整合圓餅圖（滑鼠停在扇形可看該分行詳細數字，點擊可切換至上方大圖）
+                </div>
+                <div class="region-pie-grid">
+                  <div class="pie-card">
+                    <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+                      <b style="font-size:12px;color:#082d5b" id="lblDrillSub_dep">💰 分行存款整合</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieBranch_dep" style="padding:2px 6px;font-size:10.5px">🔍</button>
+                    </div>
+                    <div id="chartPieBranch_dep" style="width:100%;height:178px;position:relative"></div>
+                  </div>
+                  <div class="pie-card">
+                    <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+                      <b style="font-size:12px;color:#082d5b" id="lblDrillSub_loan">🤝 分行授信整合</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieBranch_loan" style="padding:2px 6px;font-size:10.5px">🔍</button>
+                    </div>
+                    <div id="chartPieBranch_loan" style="width:100%;height:178px;position:relative"></div>
+                  </div>
+                  <div class="pie-card">
+                    <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+                      <b style="font-size:12px;color:#082d5b" id="lblDrillSub_fund">📈 分行基金整合</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieBranch_fund" style="padding:2px 6px;font-size:10.5px">🔍</button>
+                    </div>
+                    <div id="chartPieBranch_fund" style="width:100%;height:178px;position:relative"></div>
+                  </div>
+                  <div class="pie-card">
+                    <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+                      <b style="font-size:12px;color:#082d5b" id="lblDrillSub_rep">📢 分行通報整合</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieBranch_rep" style="padding:2px 6px;font-size:10.5px">🔍</button>
+                    </div>
+                    <div id="chartPieBranch_rep" style="width:100%;height:178px;position:relative"></div>
+                  </div>
+                  <div class="pie-card">
+                    <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+                      <b style="font-size:12px;color:#082d5b" id="lblDrillSub_cls">✅ 分行成案整合</b>
+                      <button type="button" class="chart-zoom-btn" data-zoom-chart="chartPieBranch_cls" style="padding:2px 6px;font-size:10.5px">🔍</button>
+                    </div>
+                    <div id="chartPieBranch_cls" style="width:100%;height:178px;position:relative"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- 總處專屬：如同檢視各分行圖表的方式，直接檢視「全行 4 大業務分區（北區／桃竹苗區／中區／南區）」發展狀況圖表 -->
             <div id="hqRegionsChartsPanel" class="card" style="margin-bottom:12px;border:1.5px solid #93c5fd;background:#f4f9ff;padding:12px">
@@ -2664,6 +2936,571 @@
       mountChartWithZoom("chartHqRegLine", legendHtml + svg);
     }
 
+    // =========================================================================
+    // 總處專屬：各區依各項業務（存款/授信/基金/通報/成案）圓餅圖 ＋ 懸停詳細數字浮層 ＋ 點擊擴增轄區分行整合圓餅圖
+    // =========================================================================
+    var REGION_PIE_COLORS = {
+      "北區": "#2563eb",
+      "桃竹苗區": "#0d9488",
+      "中區": "#d97706",
+      "南區": "#7c3aed"
+    };
+    var BRANCH_PIE_PALETTE = [
+      "#1d4ed8", "#0d9488", "#d97706", "#7c3aed", "#dc2626",
+      "#0284c7", "#16a34a", "#ea580c", "#9333ea", "#db2777",
+      "#4f46e5", "#059669", "#ca8a04", "#e11d48", "#2563eb"
+    ];
+    var PIE_METRICS_5 = [
+      { key: "dep",  icon: "💰", title: "存款總和", short: "存款" },
+      { key: "loan", icon: "🤝", title: "授信總和", short: "授信" },
+      { key: "fund", icon: "📈", title: "基金總和", short: "基金" },
+      { key: "rep",  icon: "📢", title: "通報商機", short: "通報" },
+      { key: "cls",  icon: "✅", title: "實際成案", short: "成案" }
+    ];
+
+    var drillPieRegion = null; // null 或 "北區" | "桃竹苗區" | "中區" | "南區"
+    var drillPieMetricKey = "dep";
+    var drillPieGroupMode = "TOP10"; // "TOP10" | "TOP15" | "ALL" | "GROUP"
+    var cachedPieTooltipMap = {}; // 儲存每個 sliceId 對應的完整浮層 HTML 資料
+
+    function calcDeltaPctText(curVal, baseVal) {
+      if (!baseVal || baseVal <= 0) return "—";
+      var p = ((curVal - baseVal) / baseVal) * 100;
+      return (p >= 0 ? "▲+" : "▼") + p.toFixed(1) + "%";
+    }
+
+    function createSvgPieArcPath(cx, cy, r, startAngle, endAngle) {
+      var span = endAngle - startAngle;
+      if (span >= Math.PI * 2 - 0.0005) {
+        var mid = startAngle + Math.PI;
+        var xA = cx + r * Math.cos(startAngle);
+        var yA = cy + r * Math.sin(startAngle);
+        var xB = cx + r * Math.cos(mid);
+        var yB = cy + r * Math.sin(mid);
+        return "M " + cx + " " + cy +
+               " L " + xA.toFixed(2) + " " + yA.toFixed(2) +
+               " A " + r + " " + r + " 0 1 1 " + xB.toFixed(2) + " " + yB.toFixed(2) +
+               " A " + r + " " + r + " 0 1 1 " + xA.toFixed(2) + " " + yA.toFixed(2) + " Z";
+      }
+      var x1 = cx + r * Math.cos(startAngle);
+      var y1 = cy + r * Math.sin(startAngle);
+      var x2 = cx + r * Math.cos(endAngle);
+      var y2 = cy + r * Math.sin(endAngle);
+      var largeArc = span > Math.PI ? 1 : 0;
+      return "M " + cx.toFixed(2) + " " + cy.toFixed(2) +
+             " L " + x1.toFixed(2) + " " + y1.toFixed(2) +
+             " A " + r.toFixed(2) + " " + r.toFixed(2) + " 0 " + largeArc + " 1 " + x2.toFixed(2) + " " + y2.toFixed(2) +
+             " Z";
+    }
+
+    function buildRegionSliceTooltipHtml(ru, activeMetricKey, allRegUnits) {
+      var cur = ru.m[selectedMonth];
+      var momYm = getPrevMonth(selectedMonth);
+      var yoyYm = getYoYMonth(selectedMonth);
+      var mom = momYm ? ru.m[momYm] : null;
+      var yoy = yoyYm ? ru.m[yoyYm] : null;
+
+      var mInfo = METRIC_META[activeMetricKey] || METRIC_META.dep;
+      var curMetricVal = getBranchMetricValue(ru, selectedMonth, activeMetricKey);
+      var momMetricVal = momYm ? getBranchMetricValue(ru, momYm, activeMetricKey) : 0;
+      var yoyMetricVal = yoyYm ? getBranchMetricValue(ru, yoyYm, activeMetricKey) : 0;
+
+      var bankTotalMetric = 0;
+      allRegUnits.forEach(function(u) { bankTotalMetric += getBranchMetricValue(u, selectedMonth, activeMetricKey); });
+      var sharePct = bankTotalMetric > 0 ? ((curMetricVal / bankTotalMetric) * 100).toFixed(1) : "0.0";
+
+      var rowsHtml = "";
+      PIE_METRICS_5.forEach(function(pm) {
+        var v = getBranchMetricValue(ru, selectedMonth, pm.key);
+        var mv = momYm ? getBranchMetricValue(ru, momYm, pm.key) : 0;
+        var yv = yoyYm ? getBranchMetricValue(ru, yoyYm, pm.key) : 0;
+        var bTot = 0;
+        allRegUnits.forEach(function(u) { bTot += getBranchMetricValue(u, selectedMonth, pm.key); });
+        var sPct = bTot > 0 ? ((v / bTot) * 100).toFixed(1) : "0.0";
+        var isCur = pm.key === activeMetricKey;
+        rowsHtml +=
+          '<div class="pie-tt-row" style="' + (isCur ? 'color:#fde047;font-weight:900;' : '') + '">' +
+            '<span>' + pm.icon + ' ' + pm.title + '：</span>' +
+            '<b>' + formatMetricVal(v, pm.key) + ' <span style="font-size:11px;color:#93c5fd">(' + sPct + '%)</span> <span style="font-size:10.5px;color:#a7f3d0">MoM ' + calcDeltaPctText(v, mv) + ' / YoY ' + calcDeltaPctText(v, yv) + '</span></b>' +
+          '</div>';
+      });
+
+      return (
+        '<div class="pie-tt-title">' +
+          '<span>🗺️ 【' + ru.code + '總和】詳細業務數據</span>' +
+          '<span style="font-size:11px;background:#1e40af;color:#fff;padding:1px 7px;border-radius:99px">' + ru.branchCount + '家分行 / ' + ru.custCount + '戶</span>' +
+        '</div>' +
+        '<div class="pie-tt-highlight">' +
+          '<div>🎯 當前檢視業務：' + mInfo.name + '</div>' +
+          '<div style="font-size:14px;margin-top:2px;color:#fef08a">' +
+            formatMetricVal(curMetricVal, activeMetricKey) + '（佔全行 ' + sharePct + '%）' +
+          '</div>' +
+          '<div style="font-size:11px;color:#dbeafe;margin-top:2px">' +
+            '月增減 MoM：' + calcDeltaPctText(curMetricVal, momMetricVal) + ' ｜ 年增減 YoY：' + calcDeltaPctText(curMetricVal, yoyMetricVal) +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:11px;font-weight:800;color:#93c5fd;margin-bottom:3px">📋 該區 5 大業務詳細數字一覽（' + selectedMonth + '）：</div>' +
+        rowsHtml +
+        '<div class="pie-tt-row" style="margin-top:2px;border-top:1px solid rgba(255,255,255,0.12);padding-top:3px">' +
+          '<span>🏆 階段權重 / 總貢獻：</span>' +
+          '<b>' + (cur[12] / 10).toFixed(1) + ' 分 / ' + (cur[5] + cur[14]).toLocaleString() + ' 點</b>' +
+        '</div>' +
+        '<div class="pie-tt-hint">👆 點擊此扇形區塊 ➔ 立即擴增展開【' + ru.code + ' ' + ru.branchCount + '家分行】整合圓餅圖</div>'
+      );
+    }
+
+    function buildBranchSliceTooltipHtml(item, regName, metricKey, regTotalVal, bankTotalVal) {
+      var mInfo = METRIC_META[metricKey] || METRIC_META.dep;
+      var momYm = getPrevMonth(selectedMonth);
+      var yoyYm = getYoYMonth(selectedMonth);
+      var regPct = regTotalVal > 0 ? ((item.val / regTotalVal) * 100).toFixed(1) : "0.0";
+      var bankPct = bankTotalVal > 0 ? ((item.val / bankTotalVal) * 100).toFixed(1) : "0.0";
+
+      var rowsHtml = "";
+      PIE_METRICS_5.forEach(function(pm) {
+        var v = getBranchMetricValue(item.unitObj, selectedMonth, pm.key);
+        var mv = momYm ? getBranchMetricValue(item.unitObj, momYm, pm.key) : 0;
+        var yv = yoyYm ? getBranchMetricValue(item.unitObj, yoyYm, pm.key) : 0;
+        var isCur = pm.key === metricKey;
+        rowsHtml +=
+          '<div class="pie-tt-row" style="' + (isCur ? 'color:#fde047;font-weight:900;' : '') + '">' +
+            '<span>' + pm.icon + ' ' + pm.title + '：</span>' +
+            '<b>' + formatMetricVal(v, pm.key) + ' <span style="font-size:10.5px;color:#a7f3d0">(MoM ' + calcDeltaPctText(v, mv) + ' / YoY ' + calcDeltaPctText(v, yv) + ')</span></b>' +
+          '</div>';
+      });
+
+      var hintStr = item.isBundle
+        ? ('👆 點擊此「' + item.label + '」區塊 ➔ 自動展開檢視【' + regName + '】全部分行完整扇形')
+        : (item.isGroupBundle
+            ? ('👆 點擊此組別區塊 ➔ 檢視【' + regName + '・' + item.label + '】詳細數據')
+            : ('👆 點擊此分行區塊 ➔ 直達檢視【' + item.label + '】分行內部狀況 (科別/行員/客戶)'));
+
+      return (
+        '<div class="pie-tt-title">' +
+          '<span>🏢 【' + item.label + '】詳細業務數據</span>' +
+          '<span style="font-size:11px;background:#1e40af;color:#fff;padding:1px 7px;border-radius:99px">' + item.subBadge + '</span>' +
+        '</div>' +
+        '<div class="pie-tt-highlight">' +
+          '<div>🎯 ' + mInfo.name + '：</div>' +
+          '<div style="font-size:14px;margin-top:2px;color:#fef08a">' +
+            formatMetricVal(item.val, metricKey) + '（佔' + regName + ' ' + regPct + '% ｜ 佔全行 ' + bankPct + '%）' +
+          '</div>' +
+          '<div style="font-size:11px;color:#dbeafe;margin-top:2px">' +
+            '月增減 MoM：' + calcDeltaPctText(item.val, item.momVal) + ' ｜ 年增減 YoY：' + calcDeltaPctText(item.val, item.yoyVal) +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:11px;font-weight:800;color:#93c5fd;margin-bottom:3px">📋 該單位 5 大業務詳細數字（' + selectedMonth + '）：</div>' +
+        rowsHtml +
+        '<div class="pie-tt-hint">' + hintStr + '</div>'
+      );
+    }
+
+    // 渲染單顆互動式 SVG 圓餅圖 (支援：分區圓餅圖 & 轄區分行整合圓餅圖)
+    function renderInteractiveSvgPieChart(containerId, slices, options) {
+      var box = el(containerId);
+      if (!box) return;
+      options = options || {};
+      var total = 0;
+      slices.forEach(function(s) { total += Math.max(0, s.val || 0); });
+      if (total <= 0) {
+        box.innerHTML = '<div style="text-align:center;padding-top:60px;color:#647b92;font-size:12px">無資料</div>';
+        return;
+      }
+
+      var W = options.width || 240;
+      var H = options.height || 190;
+      var cx = W / 2;
+      var cy = H / 2 + 2;
+      var r = options.radius || Math.min(W, H) * 0.34;
+      var innerR = options.innerRadius || (r * 0.42); // 中央微鏤空顯示總計金額
+
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:' + H + 'px;overflow:visible">';
+      var curAngle = -Math.PI / 2;
+
+      slices.forEach(function(s, idx) {
+        var v = Math.max(0, s.val || 0);
+        if (v <= 0) return;
+        var ratio = v / total;
+        var sweep = ratio * Math.PI * 2;
+        var endAngle = curAngle + sweep;
+        var midAngle = curAngle + sweep / 2;
+
+        // 若該區塊被選取展開，向外微幅彈出 5px
+        var explodeDist = s.isSelected ? 5.5 : 0;
+        var scx = cx + Math.cos(midAngle) * explodeDist;
+        var scy = cy + Math.sin(midAngle) * explodeDist;
+
+        var pathD = createSvgPieArcPath(scx, scy, r, curAngle, endAngle);
+        var sliceId = containerId + "_slice_" + idx;
+        if (s.tooltipHtml) {
+          cachedPieTooltipMap[sliceId] = s.tooltipHtml;
+        }
+
+        var strokeColor = s.isSelected ? "#082d5b" : "#ffffff";
+        var strokeW = s.isSelected ? "2.4" : "1.4";
+
+        svg += '<path d="' + pathD + '" fill="' + s.color + '" stroke="' + strokeColor + '" stroke-width="' + strokeW + '" ' +
+               'class="pie-slice" data-slice-id="' + sliceId + '" ' +
+               'data-pie-kind="' + (s.kind || "") + '" ' +
+               'data-pie-region="' + (s.region || "") + '" ' +
+               'data-pie-metric="' + (s.metricKey || "") + '" ' +
+               'data-pie-branch="' + (s.branchCode || "") + '" ' +
+               'data-pie-bundle="' + (s.isBundle ? "1" : "0") + '"></path>';
+
+        // 扇形標籤：當佔比夠大或為 4 大分區時，標示名稱與百分比
+        var pctStr = (ratio * 100).toFixed(1) + "%";
+        var showOuterLabel = options.isLargePie ? (ratio >= 0.045 || idx < 8) : (ratio >= 0.07 || slices.length <= 5);
+        if (showOuterLabel) {
+          var labelR = r + (options.isLargePie ? 17 : 13) + explodeDist;
+          var lx = cx + Math.cos(midAngle) * labelR;
+          var ly = cy + Math.sin(midAngle) * labelR;
+          var anchor = Math.cos(midAngle) >= 0 ? "start" : "end";
+          if (Math.abs(Math.cos(midAngle)) < 0.22) anchor = "middle";
+
+          // 引導短線
+          var lineStartR = r * 0.92 + explodeDist;
+          var sx = cx + Math.cos(midAngle) * lineStartR;
+          var sy = cy + Math.sin(midAngle) * lineStartR;
+          var mx = cx + Math.cos(midAngle) * (r + 7 + explodeDist);
+          var my = cy + Math.sin(midAngle) * (r + 7 + explodeDist);
+          svg += '<polyline points="' + sx.toFixed(1) + ',' + sy.toFixed(1) + ' ' + mx.toFixed(1) + ',' + my.toFixed(1) + '" fill="none" stroke="' + s.color + '" stroke-width="1.2" opacity="0.85" pointer-events="none"/>';
+
+          var fSize = options.isLargePie ? "10.5" : "9.5";
+          var dispLbl = s.shortLabel + " " + pctStr;
+          svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="' + anchor + '" font-size="' + fSize + '" font-weight="800" fill="#082d5b" pointer-events="none">' + dispLbl + '</text>';
+        }
+
+        // 若扇形夠寬 (>13%)，在扇形內部也印出金額或百分比
+        if (ratio >= 0.13) {
+          var inR = (r + innerR) * 0.52 + explodeDist;
+          var ix = cx + Math.cos(midAngle) * inR;
+          var iy = cy + Math.sin(midAngle) * inR;
+          svg += '<text x="' + ix.toFixed(1) + '" y="' + (iy + 3).toFixed(1) + '" text-anchor="middle" font-size="' + (options.isLargePie ? "10" : "9") + '" font-weight="900" fill="#ffffff" pointer-events="none">' + (s.innerText || pctStr) + '</text>';
+        }
+
+        curAngle = endAngle;
+      });
+
+      // 中央白圓心（顯示該業務全行或該區總計）
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + innerR.toFixed(1) + '" fill="#ffffff" stroke="#dbeafe" stroke-width="1.5" pointer-events="none"/>';
+      if (options.centerTopText) {
+        svg += '<text x="' + cx + '" y="' + (cy - 3).toFixed(1) + '" text-anchor="middle" font-size="' + (options.isLargePie ? "10.5" : "8.8") + '" font-weight="800" fill="#647b92" pointer-events="none">' + options.centerTopText + '</text>';
+      }
+      if (options.centerValText) {
+        svg += '<text x="' + cx + '" y="' + (cy + (options.isLargePie ? 12 : 9)).toFixed(1) + '" text-anchor="middle" font-size="' + (options.isLargePie ? "12" : "9.8") + '" font-weight="900" fill="#082d5b" pointer-events="none">' + options.centerValText + '</text>';
+      }
+
+      svg += '</svg>';
+      box.innerHTML = svg;
+    }
+
+    // 為指定分區與指定業務項目，建立「轄下分行整合圓餅圖」的切片陣列
+    function buildRegionBranchesPieSlices(regName, metricKey, groupMode, allRegUnits) {
+      var regBranches = branchMonthlyList.filter(function(b) { return b.region === regName; });
+      var momYm = getPrevMonth(selectedMonth);
+      var yoyYm = getYoYMonth(selectedMonth);
+
+      var regTotalVal = 0;
+      regBranches.forEach(function(b) { regTotalVal += getBranchMetricValue(b, selectedMonth, metricKey); });
+      var bankTotalVal = 0;
+      allRegUnits.forEach(function(ru) { bankTotalVal += getBranchMetricValue(ru, selectedMonth, metricKey); });
+
+      if (groupMode === "GROUP") {
+        var grpNames = ["第一組", "第二組", "第三組", "第四組", "第五組"];
+        var grpSlices = [];
+        grpNames.forEach(function(gp, gIdx) {
+          var sub = regBranches.filter(function(b) { return b.group === gp; });
+          if (!sub.length) return;
+          var mMap = {};
+          [selectedMonth, momYm, yoyYm].forEach(function(ym) {
+            if (!ym) return;
+            var sArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            sub.forEach(function(b) {
+              var bm = b.m[ym];
+              if (bm) { for (var k = 0; k < 15; k++) sArr[k] += bm[k]; }
+            });
+            mMap[ym] = sArr;
+          });
+          var cCnt = 0;
+          sub.forEach(function(b) { cCnt += b.custCount; });
+          var uObj = { m: mMap, custCount: cCnt };
+          var curV = getBranchMetricValue(uObj, selectedMonth, metricKey);
+          var momV = momYm ? getBranchMetricValue(uObj, momYm, metricKey) : 0;
+          var yoyV = yoyYm ? getBranchMetricValue(uObj, yoyYm, metricKey) : 0;
+          var item = {
+            kind: "BRANCH",
+            isGroupBundle: true,
+            region: regName,
+            metricKey: metricKey,
+            label: gp + " (" + sub.length + "家)",
+            shortLabel: gp,
+            subBadge: regName + "・" + sub.length + "家分行 / " + cCnt + "戶",
+            val: curV,
+            momVal: momV,
+            yoyVal: yoyV,
+            unitObj: uObj,
+            color: BRANCH_PIE_PALETTE[gIdx % BRANCH_PIE_PALETTE.length]
+          };
+          item.tooltipHtml = buildBranchSliceTooltipHtml(item, regName, metricKey, regTotalVal, bankTotalVal);
+          grpSlices.push(item);
+        });
+        return { slices: grpSlices, regTotalVal: regTotalVal, bankTotalVal: bankTotalVal, totalBranchCount: regBranches.length };
+      }
+
+      // 依當前業務指標由大到小排序該區分行
+      var sorted = regBranches.slice().sort(function(a, b) {
+        return getBranchMetricValue(b, selectedMonth, metricKey) - getBranchMetricValue(a, selectedMonth, metricKey);
+      });
+
+      var topN = groupMode === "TOP10" ? 10 : (groupMode === "TOP15" ? 15 : sorted.length);
+      var mainList = sorted.slice(0, topN);
+      var restList = sorted.slice(topN);
+
+      var slices = mainList.map(function(b, idx) {
+        var curV = getBranchMetricValue(b, selectedMonth, metricKey);
+        var momV = momYm ? getBranchMetricValue(b, momYm, metricKey) : 0;
+        var yoyV = yoyYm ? getBranchMetricValue(b, yoyYm, metricKey) : 0;
+        var item = {
+          kind: "BRANCH",
+          isBundle: false,
+          region: regName,
+          metricKey: metricKey,
+          branchCode: b.code,
+          label: b.code + " " + b.name,
+          shortLabel: b.code + b.name.replace("分行", ""),
+          subBadge: b.region + "・" + b.group + "・" + b.custCount + "戶",
+          val: curV,
+          momVal: momV,
+          yoyVal: yoyV,
+          unitObj: b,
+          color: BRANCH_PIE_PALETTE[idx % BRANCH_PIE_PALETTE.length]
+        };
+        item.tooltipHtml = buildBranchSliceTooltipHtml(item, regName, metricKey, regTotalVal, bankTotalVal);
+        return item;
+      });
+
+      if (restList.length > 0) {
+        var mMap = {};
+        [selectedMonth, momYm, yoyYm].forEach(function(ym) {
+          if (!ym) return;
+          var sArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          restList.forEach(function(b) {
+            var bm = b.m[ym];
+            if (bm) { for (var k = 0; k < 15; k++) sArr[k] += bm[k]; }
+          });
+          mMap[ym] = sArr;
+        });
+        var cCnt = 0;
+        restList.forEach(function(b) { cCnt += b.custCount; });
+        var bundleUnit = { m: mMap, custCount: cCnt };
+        var curV = getBranchMetricValue(bundleUnit, selectedMonth, metricKey);
+        var momV = momYm ? getBranchMetricValue(bundleUnit, momYm, metricKey) : 0;
+        var yoyV = yoyYm ? getBranchMetricValue(bundleUnit, yoyYm, metricKey) : 0;
+        var bundleItem = {
+          kind: "BRANCH",
+          isBundle: true,
+          region: regName,
+          metricKey: metricKey,
+          branchCode: "",
+          label: "其餘 " + restList.length + " 家分行整合",
+          shortLabel: "其餘" + restList.length + "家",
+          subBadge: regName + "其餘 " + restList.length + " 家分行合計 / " + cCnt + "戶",
+          val: curV,
+          momVal: momV,
+          yoyVal: yoyV,
+          unitObj: bundleUnit,
+          color: "#64748b"
+        };
+        bundleItem.tooltipHtml = buildBranchSliceTooltipHtml(bundleItem, regName, metricKey, regTotalVal, bankTotalVal);
+        slices.push(bundleItem);
+      }
+
+      return { slices: slices, regTotalVal: regTotalVal, bankTotalVal: bankTotalVal, totalBranchCount: regBranches.length };
+    }
+
+    // 渲染點擊後擴增之「該區轄下各分行整合圓餅圖」下鑽面板
+    function renderRegionBranchDrillPiePanel(allRegUnits) {
+      var panel = el("hqRegionBranchPieDrillPanel");
+      var closeBtn = el("btnCloseBranchDrillPie");
+      if (!panel) return;
+
+      // 更新上方快速切換按鈕高亮狀態
+      var qBtns = document.querySelectorAll(".pie-quick-reg-btn");
+      for (var q = 0; q < qBtns.length; q++) {
+        var isAct = qBtns[q].getAttribute("data-qreg") === drillPieRegion;
+        qBtns[q].style.background = isAct ? "#1d4ed8" : "#fff";
+        qBtns[q].style.color = isAct ? "#fff" : "#193653";
+        qBtns[q].style.borderColor = isAct ? "#1d4ed8" : "#b8cfe8";
+      }
+
+      if (!drillPieRegion) {
+        panel.style.display = "none";
+        if (closeBtn) closeBtn.style.display = "none";
+        return;
+      }
+
+      panel.style.display = "block";
+      if (closeBtn) closeBtn.style.display = "inline-block";
+
+      if (el("drillPieMetricSelect")) el("drillPieMetricSelect").value = drillPieMetricKey;
+      if (el("drillPieGroupModeSelect")) el("drillPieGroupModeSelect").value = drillPieGroupMode;
+
+      var regUnits = allRegUnits || buildAggregatedUnitObjects("REGIONS");
+      var mInfo = METRIC_META[drillPieMetricKey] || METRIC_META.dep;
+      var mainData = buildRegionBranchesPieSlices(drillPieRegion, drillPieMetricKey, drillPieGroupMode, regUnits);
+
+      if (el("drillPieRegionBadge")) {
+        el("drillPieRegionBadge").textContent = "🔍 " + drillPieRegion + "（共 " + mainData.totalBranchCount + " 家分行）";
+      }
+      if (el("drillPiePanelTitle")) {
+        el("drillPiePanelTitle").textContent = "【" + drillPieRegion + "】轄下各分行業務整合圓餅圖（滑鼠停在區塊可看該分行詳細數字）";
+      }
+      if (el("drillMainPieTitle")) {
+        el("drillMainPieTitle").textContent = "🥧 【" + drillPieRegion + "】轄下分行「" + mInfo.name + "」整合圓餅圖";
+      }
+      if (el("thDrillMetricVal")) {
+        el("thDrillMetricVal").textContent = mInfo.shortLabel + " (" + selectedMonth + ")";
+      }
+
+      // 渲染左上大顆「該區分行整合主圓餅圖」
+      renderInteractiveSvgPieChart("chartDrillBranchMainPie", mainData.slices, {
+        width: 500,
+        height: 265,
+        radius: 88,
+        innerRadius: 38,
+        isLargePie: true,
+        centerTopText: drillPieRegion + "合計",
+        centerValText: formatMetricVal(mainData.regTotalVal, drillPieMetricKey)
+      });
+
+      // 渲染右上「該區各分行佔比與詳細數字一覽表」
+      var tbody = document.querySelector("#drillBranchPieTable tbody");
+      if (tbody) {
+        tbody.innerHTML = "";
+        mainData.slices.forEach(function(s, idx) {
+          var rPct = mainData.regTotalVal > 0 ? ((s.val / mainData.regTotalVal) * 100).toFixed(1) + "%" : "0.0%";
+          var bPct = mainData.bankTotalVal > 0 ? ((s.val / mainData.bankTotalVal) * 100).toFixed(1) + "%" : "0.0%";
+          var u = s.unitObj;
+          var curM = u.m[selectedMonth];
+          var tr = document.createElement("tr");
+          tr.style.cursor = "pointer";
+          tr.innerHTML =
+            '<td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + s.color + ';margin-right:6px"></span>' +
+              '<b>' + (s.isBundle ? s.label : ("#" + (idx + 1) + " " + s.label)) + '</b></td>' +
+            '<td><b style="color:#082d5b">' + formatMetricVal(s.val, drillPieMetricKey) + '</b></td>' +
+            '<td><span class="demo" style="font-size:11px;padding:1px 6px">' + rPct + '</span></td>' +
+            '<td><span style="font-weight:700;color:#47627d">' + bPct + '</span></td>' +
+            '<td>' + deltaBadgeHtml("MoM", s.val, s.momVal) + ' ' + deltaBadgeHtml("YoY", s.val, s.yoyVal) + '</td>' +
+            '<td style="font-size:11.5px;color:#334155">' +
+              '存:<b>' + formatWanToReadable(curM[0]) + '</b>｜' +
+              '放:<b>' + formatWanToReadable(curM[1]) + '</b>｜' +
+              '基:<b>' + formatWanToReadable(curM[3]) + '</b>｜' +
+              '報:<b>' + formatWanToReadable(curM[10]) + '</b>｜' +
+              '成:<b style="color:var(--green)">' + formatWanToReadable(curM[11]) + '</b>' +
+            '</td>';
+          tr.addEventListener("click", function() {
+            if (s.isBundle) {
+              drillPieGroupMode = "ALL";
+              renderRegionBranchDrillPiePanel(regUnits);
+              toast("🔍 已展開【" + drillPieRegion + "】全部 " + mainData.totalBranchCount + " 家分行完整圓餅圖扇形！");
+            } else if (s.branchCode) {
+              insideBranchCode = s.branchCode;
+              el("insideBranchSelect").value = s.branchCode;
+              switchWarSubTab("branch-inside");
+              renderBranchInsidePanel();
+              toast("🏢 已切換檢視【" + s.label + "】分行內部狀況");
+            }
+          });
+          tbody.appendChild(tr);
+        });
+      }
+
+      // 渲染下方「該區轄下分行於 5 大業務項目（存款/授信/基金/通報/成案）之整合圓餅圖」
+      PIE_METRICS_5.forEach(function(pm) {
+        var subData = buildRegionBranchesPieSlices(drillPieRegion, pm.key, drillPieGroupMode, regUnits);
+        var lblEl = el("lblDrillSub_" + pm.key);
+        if (lblEl) {
+          lblEl.textContent = pm.icon + " " + drillPieRegion + "分行「" + pm.short + "」整合";
+        }
+        renderInteractiveSvgPieChart("chartPieBranch_" + pm.key, subData.slices, {
+          width: 225,
+          height: 175,
+          radius: 56,
+          innerRadius: 24,
+          isLargePie: false,
+          centerTopText: drillPieRegion + pm.short,
+          centerValText: formatMetricVal(subData.regTotalVal, pm.key)
+        });
+      });
+    }
+
+    // 渲染總處上方「全行 4 大業務分區 × 5 大業務項目（存款/授信/基金/通報/成案）互動圓餅圖看板」
+    function renderHqRegionsPieCharts(regUnits) {
+      if (!regUnits || !regUnits.length) return;
+
+      // 1. 渲染 4 大分區共用圖例（點擊圖例也可直接展開該區分行整合圓餅圖）
+      var legendBox = el("hqRegPieSharedLegend");
+      if (legendBox) {
+        legendBox.innerHTML =
+          '<span style="color:#47627d;font-size:12px">🗺️ 點擊分區圖例或圓餅圖扇形展開「該區分行整合圓餅圖」：</span>' +
+          regUnits.map(function(ru) {
+            var c = REGION_PIE_COLORS[ru.code] || "#2563eb";
+            var isSel = drillPieRegion === ru.code;
+            return (
+              '<span class="pie-legend-reg-item" data-lreg="' + ru.code + '" style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;cursor:pointer;border:1.5px solid ' + (isSel ? '#082d5b' : '#cbd5e1') + ';background:' + (isSel ? '#dbeafe' : '#f8fafc') + '">' +
+                '<i style="width:11px;height:11px;border-radius:50%;background:' + c + ';display:inline-block"></i>' +
+                '<span style="color:#082d5b">' + ru.code + ' (' + ru.branchCount + '家分行)</span>' +
+              '</span>'
+            );
+          }).join("");
+      }
+
+      // 2. 依序渲染 5 大業務項目（存款 / 授信 / 基金 / 通報 / 成案）之 4 大分區圓餅圖
+      PIE_METRICS_5.forEach(function(pm) {
+        var cardEl = el("pieCardReg_" + pm.key);
+        if (cardEl) {
+          cardEl.classList.toggle("active-metric", drillPieRegion && drillPieMetricKey === pm.key);
+        }
+
+        var bankTotal = 0;
+        regUnits.forEach(function(ru) { bankTotal += getBranchMetricValue(ru, selectedMonth, pm.key); });
+
+        var subEl = el("pieSubReg_" + pm.key);
+        if (subEl) {
+          subEl.textContent = "全行合計：" + formatMetricVal(bankTotal, pm.key);
+        }
+
+        var slices = regUnits.map(function(ru) {
+          var v = getBranchMetricValue(ru, selectedMonth, pm.key);
+          var c = REGION_PIE_COLORS[ru.code] || "#2563eb";
+          return {
+            kind: "REGION",
+            region: ru.code,
+            metricKey: pm.key,
+            shortLabel: ru.code,
+            val: v,
+            color: c,
+            isSelected: drillPieRegion === ru.code,
+            innerText: formatWanToReadable(v),
+            tooltipHtml: buildRegionSliceTooltipHtml(ru, pm.key, regUnits)
+          };
+        });
+
+        renderInteractiveSvgPieChart("chartPieReg_" + pm.key, slices, {
+          width: 230,
+          height: 192,
+          radius: 60,
+          innerRadius: 25,
+          isLargePie: false,
+          centerTopText: "全行" + pm.short,
+          centerValText: formatMetricVal(bankTotal, pm.key)
+        });
+      });
+
+      // 3. 若目前已點擊展開某區，同步更新下鑽面板
+      renderRegionBranchDrillPiePanel(regUnits);
+    }
+
     // 總處專用：在主畫面直接渲染「全行 4 大業務分區（北區／桃竹苗區／中區／南區）總和一覽卡與發展狀況圖表」
     function renderHqRegionTotalsStrip() {
       var sec = el("hqRegionTotalsSection");
@@ -2706,10 +3543,12 @@
         card.addEventListener("click", function() {
           if (el("warRegionFilter").value === ru.code) {
             el("warRegionFilter").value = "ALL";
+            drillPieRegion = null;
             toast("🔄 已恢復檢視【全行 4 大業務分區】");
           } else {
             el("warRegionFilter").value = ru.code;
-            toast("🗺️ 已篩選檢視【" + ru.code + "】轄下 " + ru.branchCount + " 家分行與總和");
+            drillPieRegion = ru.code;
+            toast("🗺️ 已篩選檢視【" + ru.code + "】轄下 " + ru.branchCount + " 家分行，並展開該區分行整合圓餅圖");
           }
           sliderOffsetT1 = 0;
           sliderOffsetT2 = 0;
@@ -2717,6 +3556,9 @@
         });
         grid.appendChild(card);
       });
+
+      // 同步渲染總處「各區依各項業務（存款/授信/基金/通報/成案）圓餅圖 ＋ 點擊擴增轄區分行整合圓餅圖」
+      renderHqRegionsPieCharts(regUnits);
 
       // 同步渲染總處「全行 4 大業務分區發展狀況圖表組」
       renderHqRegionsDevelopmentCharts(regUnits);
@@ -4238,6 +5080,142 @@
     if (el("btnHqRegMonPrev1")) el("btnHqRegMonPrev1").addEventListener("click", function() { stepHqRegMonthSlider(-1); });
     if (el("btnHqRegMonNext1")) el("btnHqRegMonNext1").addEventListener("click", function() { stepHqRegMonthSlider(1); });
     if (el("btnHqRegMonNext6")) el("btnHqRegMonNext6").addEventListener("click", function() { stepHqRegMonthSlider(6); });
+
+    // =========================================================================
+    // 圓餅圖懸停詳細數字浮層 (Tooltip) 與點擊擴增轄區分行整合圓餅圖事件綁定
+    // =========================================================================
+    function positionPieFloatingTooltip(clientX, clientY) {
+      var tt = el("pieFloatingTooltip");
+      if (!tt || tt.style.display === "none") return;
+      var pad = 16;
+      var ttW = tt.offsetWidth || 300;
+      var ttH = tt.offsetHeight || 220;
+      var x = clientX + pad;
+      var y = clientY + pad;
+      if (x + ttW + 12 > window.innerWidth) {
+        x = Math.max(10, clientX - ttW - pad);
+      }
+      if (y + ttH + 12 > window.innerHeight) {
+        y = Math.max(10, clientY - ttH - pad);
+      }
+      tt.style.left = x + "px";
+      tt.style.top = y + "px";
+    }
+
+    document.addEventListener("mouseover", function(e) {
+      var slice = e.target && e.target.closest ? e.target.closest(".pie-slice") : null;
+      var tt = el("pieFloatingTooltip");
+      if (!tt) return;
+      if (slice) {
+        var sid = slice.getAttribute("data-slice-id");
+        var html = sid ? cachedPieTooltipMap[sid] : "";
+        if (html) {
+          tt.innerHTML = html;
+          tt.style.display = "block";
+          positionPieFloatingTooltip(e.clientX, e.clientY);
+        }
+      }
+    });
+
+    document.addEventListener("mousemove", function(e) {
+      var slice = e.target && e.target.closest ? e.target.closest(".pie-slice") : null;
+      var tt = el("pieFloatingTooltip");
+      if (!tt) return;
+      if (slice) {
+        positionPieFloatingTooltip(e.clientX, e.clientY);
+      } else if (tt.style.display === "block") {
+        tt.style.display = "none";
+      }
+    });
+
+    document.addEventListener("click", function(e) {
+      // 1. 點擊圓餅圖扇形區塊
+      var slice = e.target && e.target.closest ? e.target.closest(".pie-slice") : null;
+      if (slice) {
+        var kind = slice.getAttribute("data-pie-kind");
+        var reg = slice.getAttribute("data-pie-region");
+        var mKey = slice.getAttribute("data-pie-metric") || "dep";
+        var bCode = slice.getAttribute("data-pie-branch");
+        var isBundle = slice.getAttribute("data-pie-bundle") === "1";
+
+        if (kind === "REGION" && reg) {
+          drillPieRegion = reg;
+          drillPieMetricKey = mKey;
+          var regUnits = buildAggregatedUnitObjects("REGIONS");
+          renderHqRegionsPieCharts(regUnits);
+          var drillEl = el("hqRegionBranchPieDrillPanel");
+          if (drillEl && drillEl.scrollIntoView) {
+            drillEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+          var mName = (METRIC_META[mKey] || METRIC_META.dep).name;
+          toast("🥧 已展開【" + reg + "】轄下各分行「" + mName + "」與 5 大業務整合圓餅圖！");
+          return;
+        } else if (kind === "BRANCH") {
+          if (isBundle) {
+            drillPieGroupMode = "ALL";
+            renderRegionBranchDrillPiePanel();
+            toast("🔍 已展開【" + drillPieRegion + "】全部分行完整圓餅圖扇形！");
+          } else if (mKey && mKey !== drillPieMetricKey) {
+            drillPieMetricKey = mKey;
+            renderRegionBranchDrillPiePanel();
+            toast("🎯 已切換上方主圓餅圖檢視【" + (METRIC_META[mKey] || METRIC_META.dep).name + "】");
+          } else if (bCode) {
+            insideBranchCode = bCode;
+            if (el("insideBranchSelect")) el("insideBranchSelect").value = bCode;
+            switchWarSubTab("branch-inside");
+            renderBranchInsidePanel();
+            toast("🏢 已切換檢視分行【" + bCode + "】內部狀況（科別／行員／客戶）");
+          }
+          return;
+        }
+      }
+
+      // 2. 點擊上方快速展開分區按鈕或共用圖例
+      var qBtn = e.target && e.target.closest ? e.target.closest(".pie-quick-reg-btn") : null;
+      if (qBtn) {
+        var qReg = qBtn.getAttribute("data-qreg");
+        if (drillPieRegion === qReg) {
+          drillPieRegion = null;
+          toast("已收合轄區分行整合圓餅圖");
+        } else {
+          drillPieRegion = qReg;
+          toast("🥧 已展開【" + qReg + "】轄下各分行整合圓餅圖！");
+        }
+        renderHqRegionsPieCharts(buildAggregatedUnitObjects("REGIONS"));
+        return;
+      }
+
+      var lItem = e.target && e.target.closest ? e.target.closest(".pie-legend-reg-item") : null;
+      if (lItem) {
+        var lReg = lItem.getAttribute("data-lreg");
+        drillPieRegion = (drillPieRegion === lReg) ? null : lReg;
+        renderHqRegionsPieCharts(buildAggregatedUnitObjects("REGIONS"));
+        if (drillPieRegion) {
+          toast("🥧 已展開【" + drillPieRegion + "】轄下各分行整合圓餅圖！");
+        }
+        return;
+      }
+    });
+
+    if (el("btnCloseBranchDrillPie")) {
+      el("btnCloseBranchDrillPie").addEventListener("click", function() {
+        drillPieRegion = null;
+        renderHqRegionsPieCharts(buildAggregatedUnitObjects("REGIONS"));
+        toast("已收合轄區分行整合圓餅圖");
+      });
+    }
+    if (el("drillPieMetricSelect")) {
+      el("drillPieMetricSelect").addEventListener("change", function() {
+        drillPieMetricKey = this.value;
+        renderHqRegionsPieCharts(buildAggregatedUnitObjects("REGIONS"));
+      });
+    }
+    if (el("drillPieGroupModeSelect")) {
+      el("drillPieGroupModeSelect").addEventListener("change", function() {
+        drillPieGroupMode = this.value;
+        renderRegionBranchDrillPiePanel();
+      });
+    }
 
     el("showComboBarsInTimeline").addEventListener("change", function() {
       renderMultiBranchCompareSection();
