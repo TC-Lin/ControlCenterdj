@@ -9,23 +9,33 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 隱藏 Streamlit 預設上方空白與邊界，讓戰情室完整滿版呈現
+# 讓 Streamlit 的 iframe 固定貼齊瀏覽器視窗 (100vw x 100vh)，
+# 確保內部放大視窗 (Modal) 與固定側邊欄永遠 100% 置中於螢幕正中央，且不會產生雙層捲軸
 st.markdown(
     """
     <style>
-      #MainMenu {visibility: hidden;}
-      header {visibility: hidden;}
-      footer {visibility: hidden;}
-      .block-container {
-        padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
-        max-width: 100% !important;
+      #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+      html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .block-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        overflow: hidden !important;
       }
       iframe {
-        width: 100% !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
         border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        z-index: 9999 !important;
       }
     </style>
     """,
@@ -36,6 +46,6 @@ html_path = Path(__file__).parent / "BusinessWarRoom.html"
 
 if html_path.exists():
     html_content = html_path.read_text(encoding="utf-8")
-    components.html(html_content, height=1350, scrolling=True)
+    components.html(html_content, height=900, scrolling=True)
 else:
     st.error("找不到 BusinessWarRoom.html，請先執行 `python build_warroom_html.py` 產生戰情室檔案。")
