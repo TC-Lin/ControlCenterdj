@@ -1,0 +1,6 @@
+# 忽略含有私人 API 金鑰或暫存之檔案
+untitled2.py
+__pycache__/
+*.pyc
+.DS_Store
+.env
